@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+#
+# This script prints synopsis of the infrac utility.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+cat "$INFRAC_DIR/synopsis.txt"

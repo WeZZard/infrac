@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# This script normalizes the time setting of the host.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+if [ "$(uname -s)" = "Linux" ]; then
+	# Install ntpdate
+	$INFRAC_LIB_DIR/has-binary ntpdate
+	if [ ! $? -eq 0 ]; then
+		$INFRAC_LIB_DIR/install-package ntpdate
+	fi
+	
+	# Set the coordinated universal time, UTC
+	timedatectl set-timezone UTC
+	# Set your hardware clock to coordinated universal time
+	timedatectl set-local-rtc 0
+	# Automatic time synchronization with remote NTP server
+	timedatectl set-ntp true
+fi
+
+exit 0

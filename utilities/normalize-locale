@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# This script normalizes the locale of a host
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+if [ "$(uname -s)" = "Linux" ]; then
+	ENVIRONMENT_FILE="/etc/environment"
+	
+	if [ ! -f "$ENVIRONMENT_FILE" ]; then
+		touch "$ENVIRONMENT_FILE"
+		if [ $? -ne 0 ]; then
+			echo_error "Cannot create environment file: $ENVIRONMENT_FILE"
+			exit 1
+		fi
+	fi
+	
+	infrac utility config-set --file=$ENVIRONMENT_FILE \
+		--delimiter="="\
+		--variable-name="LC_ALL" \
+		--variable-value="en_US.UTF-8"
+	#    --multiline
+	
+	infrac utility config-set --file=$ENVIRONMENT_FILE \
+		--delimiter="="\
+		--variable-name="LANG" \
+		--variable-value="en_US.UTF-8"
+fi
+
+exit 0

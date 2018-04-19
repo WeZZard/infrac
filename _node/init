@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# This script inits a host as a infrac in Individual Computing Infrastructures.
+#
+
+if [ -z ${INFRAC_SERVICES_DIR+X} ]; then
+	echo_error "This script shall not be invoked independently."
+	exit 1
+fi
+
+$INFRAC_LIB_DIR/assert-run-as-root
+
+if [ $# = 0 ]; then
+	infrac utility normalize-locale
+	
+	infrac utility normalize-time
+	
+	infrac utility set-hostname
+	
+	infrac utility add-sudoer
+	
+	infrac utility add-sshd-public-key
+	
+	exit 0
+else
+	echo_error "Too much arguments: \"'$*'\"."
+	infrac utility print-init-synopsis
+	exit 1
+fi

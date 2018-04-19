@@ -1,0 +1,115 @@
+#!/bin/sh
+#
+# This script adds a sudoer.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+
+# Install sudo
+$INFRAC_LIB_DIR/has-binary sudo
+if [ ! $? -eq 0 ]; then
+	$INFRAC_LIB_DIR/install-package sudo
+fi
+		
+CONTINUE_TO_ADD_SUDOER="yes"
+
+while : ; do
+	case $CONTINUE_TO_ADD_SUDOER in
+	yes)
+		# Create sudoer
+		CREATES_SUDOER=0
+		while : ; do
+			printf "Create a sudoer(yes/no)? [no]: "
+			read INPUT_STRING
+			case $INPUT_STRING in
+			yes)
+				CREATES_SUDOER=1
+				break
+				;;
+			no|"")
+				CREATES_SUDOER=0
+				break
+				;;
+			*)
+				echo_warning "Input \"yes\" or \"no\"."
+				;;
+			esac
+		done
+
+		if [ ! `expr $CREATES_SUDOER` -eq 1 ]; then
+			exit 0
+		fi
+
+		# Active user group of the sudoers
+		UNAME=$(uname -s)
+
+		DISTRIBUTION_NAME=$($INFRAC_LIB_DIR/get-distribution)
+
+		SUDOER_GROUP="wheel"
+		SUDOERS_FILE="/etc/sudoers"
+		case $DISTRIBUTION_NAME in
+		Debian*)
+			SUDOER_GROUP="sudo"
+			;;
+		FreeBSD*)
+			SUDOERS_FILE="/usr/local/etc/sudoers"
+			;;
+		*)
+			;;
+		esac
+
+		sed -i "/%$SUDOER_GROUP	ALL=(ALL:ALL) ALL/s/^# *//" $SUDOERS_FILE
+
+		# Create Sudoer
+		USERNAME=0
+		while : ; do
+			printf "Type the sudoer's username: "
+			read INPUT_STRING
+			case $INPUT_STRING in
+			*)
+				USERNAME=$INPUT_STRING
+		
+				if useradd $USERNAME --create-home; then
+					break
+				else
+					echo_warning "Invalid user name! Try agian."
+				fi
+				;;
+			esac
+		done
+
+		# Generate user password
+		infrac utility randomize-password $USERNAME
+
+		# Add to the sudoer group
+		case $DISTRIBUTION_NAME in
+		FreeBSD*)
+			;;
+		*)
+			if ! $(usermod -aG $SUDOER_GROUP $USERNAME); then
+				ERROR_CODE=$?
+				echo_error "Cannot add $USERNAME to sudo group $SUDOER_GROUP ($ERROR_CODE)."
+				exit 1
+			fi
+			;;
+		esac
+		;;
+	no)
+		CONTINUE_TO_ADD_SUDOER=0
+		break
+		;;
+	*)
+		echo_warning "Input \"yes\" or \"no\"."
+		;;
+	esac
+done
+
+
+exit 0

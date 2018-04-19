@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+#
+# This script asserts the script itself is run as root.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+if [ `id -u` -ne 0 ]; then
+	echo_error "This script must be run as root!"
+	exit 1
+fi
+
+exit 0

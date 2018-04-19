@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# This script checks sshd public key.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+if [ $# -eq 1 ]; then
+	PUBLIC_KEY=$1
+
+	echo $PUBLIC_KEY | grep -E /^\s*ssh-[a-z0-9]+ AAAA[0-9A-Za-z+\/]+[=]{0,3} ([^@]+@[^@]+)\s*$/
+
+	if [ $? -eq 0 ]; then
+		exit 0
+	else
+		exit 1
+	fi
+else
+	echo_error "No sshd public key specified. Call with a sshd public key please."
+	exit 1
+fi

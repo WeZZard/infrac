@@ -1,0 +1,213 @@
+#!/bin/sh
+#
+# This script init the host with a step-by-setup guide
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+
+# Install ssh
+$INFRAC_LIB_DIR/has-binary sshd
+if [ ! $? -eq 0 ]; then
+	$INFRAC_LIB_DIR/install-package ssh
+fi
+
+# Install sudo
+$INFRAC_LIB_DIR/has-binary sudo
+if [ ! $? -eq 0 ]; then
+	$INFRAC_LIB_DIR/install-package sudo
+fi
+
+PUBLIC_KEYS_LIST=""
+
+CONTINUE_TO_ADD_PUBLIC_KEY="yes"
+
+while : ; do
+	case $CONTINUE_TO_ADD_PUBLIC_KEY in
+	yes)
+		# Ask
+		ADDS_SSHD_PUBLIC_KEY=0
+		while : ; do
+			printf "Add an sshd public key(yes/no)? [no]: "
+			read INPUT_STRING
+			case $INPUT_STRING in
+			yes)
+				ADDS_SSHD_PUBLIC_KEY=1
+				break
+				;;
+			no|"")
+				ADDS_SSHD_PUBLIC_KEY=0
+				break
+				;;
+			*)
+				echo_warning "Input \"yes\" or \"no\"."
+				;;
+			esac
+		done
+
+		if [ ! `expr $ADDS_SSHD_PUBLIC_KEY` -eq 1 ]; then
+			break
+		fi
+
+		# Input the public key
+		PUBLIC_KEY=""
+		while : ; do
+			printf "Public key: "
+			read PUBLIC_KEY
+			
+			echo $PUBLIC_KEY | grep -E 'ssh-dss AAAA[0-9A-Za-z+/=]{576}' > /dev/null 1>&2
+			if [ $? -eq 0 ]; then
+				break
+			fi
+			
+			echo $PUBLIC_KEY | grep -E 'ecdsa-sha2-nistp256 AAAA[0-9A-Za-z+/=]{136}' > /dev/null 1>&2
+			if [ $? -eq 0 ]; then
+				break
+			fi
+			
+			echo $PUBLIC_KEY | grep -E 'ssh-ed25519 AAAA[0-9A-Za-z+/=]{64}' > /dev/null 1>&2
+			if [ $? -eq 0 ]; then
+				break
+			fi
+			
+			echo $PUBLIC_KEY | grep -E 'ssh-rsa AAAA[0-9A-Za-z+/=]{368}' > /dev/null 1>&2
+			if [ $? -eq 0 ]; then
+				break
+			fi
+
+			echo_warning "Invalid sshd public key. You shall just enter your public key. Key description can be appended later."
+		done
+		
+		# Input public key descriptions
+		printf "Public key description: "
+		read PUBLIC_KEY_DESCRIPTION
+
+		if [ "$PUBLIC_KEYS_LIST" = "" ]; then
+			PUBLIC_KEYS_LIST="$PUBLIC_KEY $PUBLIC_KEY_DESCRIPTION"
+		else
+			PUBLIC_KEYS_LIST="$PUBLIC_KEYS_LIST\n$PUBLIC_KEY $PUBLIC_KEY_DESCRIPTION"
+		fi
+
+		;;
+	no)
+		CONTINUE_TO_ADD_PUBLIC_KEY=0
+		break
+		;;
+	*)
+		echo_warning "Input \"yes\" or \"no\"."
+		;;
+	esac
+done
+
+if [ "$PUBLIC_KEYS_LIST" = "" ]; then
+	exit 0
+fi
+
+echo_info "sshd public keys to append:"
+echo "$PUBLIC_KEYS_LIST"
+
+# Get authorized keys file path
+AUTORIZED_KEYS_FILES=$(
+awk 'match($0, /^AuthorizedKeysFile/) { print $0 }' /etc/ssh/sshd_config |
+sed -E 's/AuthorizedKeysFile\s+//'
+)
+
+if [ "$AUTORIZED_KEYS_FILES" = "" ]; then
+	AUTORIZED_KEYS_FILES=".ssh/authorized_keys"
+fi
+
+AUTORIZED_KEYS_PATH=$(echo "$AUTORIZED_KEYS_FILES" | cut -d " " -f 1)
+
+# Add keys to user's authorized keys
+PUBLIC_KEY_INSTALL_DESTINATIONS=""
+
+CONTINUE_TO_ADD_USER=1
+
+
+while : ; do
+	case $CONTINUE_TO_ADD_USER in
+	1)
+		# Ask
+		# Input the public key
+		USERNAME=""
+		HOME_DIR=""
+		while : ; do
+			printf "Which user cloud own the sshd public keys: "
+			read USERNAME
+			case $USERNAME in
+			"")
+				CONTINUE_TO_ADD_USER=0
+				break
+				;;
+			*)
+				PASSWD=$(getent passwd "$USERNAME")
+				
+				if [ $? -eq 0 ]; then
+					HOME_DIR=$(echo $PASSWD | sed 's/:/ /g' | cut -d " " -f 6)
+					
+					if [ -d $HOME_DIR ]; then
+						USER_AUTORIZED_KEYS_PATH="$USER:$HOME_DIR/$AUTORIZED_KEYS_PATH"
+						
+						if [ "$PUBLIC_KEY_INSTALL_DESTINATIONS" = "" ]; then
+							PUBLIC_KEY_INSTALL_DESTINATIONS="$USER_AUTORIZED_KEYS_PATH"
+						else
+							PUBLIC_KEY_INSTALL_DESTINATIONS="$PUBLIC_KEY_INSTALL_DESTINATIONS $USER_AUTORIZED_KEYS_PATH"
+						fi
+						
+						break
+					else
+						echo_error "User $USERNAME doesn't have home directory."
+					fi
+				else
+					echo_error "User $USERNAME doesn't exist."
+				fi
+				;;
+			esac
+		done
+		
+		;;
+	0)
+		CONTINUE_TO_ADD_USER=0
+		break
+		;;
+	*)
+		echo_warning "Input \"yes\" or \"no\"."
+		;;
+	esac
+done
+
+# Install public keys
+for USER_INSTALL_DESTINATION in $PUBLIC_KEY_INSTALL_DESTINATIONS; do
+	SPLIT_USER_INSTALL_DESTINATION=$(echo $USER_INSTALL_DESTINATION | sed 's/:/ /g')
+	USERNAME=$(echo $SPLIT_USER_INSTALL_DESTINATION | cut -d " " -f 1)
+	DESTINATION=$(echo $SPLIT_USER_INSTALL_DESTINATION | cut -d " " -f 2)
+
+	DESTINATION_DIR=$(dirname "$DESTINATION")
+	
+    sudo -H -u $USERNAME mkdir -p $DESTINATION_DIR
+	sudo -H -u $USERNAME chmod 700 $DESTINATION_DIR
+	sudo -H -u $USERNAME touch $DESTINATION
+	sudo -H -u $USERNAME chmod 600 $DESTINATION
+	
+	echo "$PUBLIC_KEYS_LIST" | while read -r PUBLIC_KEY_AND_DESCRIPTION; do
+		KEY_TYPE=$(echo $PUBLIC_KEY_AND_DESCRIPTION | cut -d " " -f 1)
+		KEY_CONTENT=$(echo $PUBLIC_KEY_AND_DESCRIPTION | cut -d " " -f 2)
+		DESCRIPTION=$(echo $PUBLIC_KEY_AND_DESCRIPTION | cut -d " " -f 3)
+		PUBLIC_KEY="$KEY_TYPE $KEY_CONTENT"
+		if sudo -H -u $USERNAME grep "$PUBLIC_KEY.*" $DESTINATION >> /dev/null 2>&1 ; then
+			DESCRIPTION=$(echo $DESCRIPTION | sed 's/\//\\\//g')
+			PUBLIC_KEY=$(echo $PUBLIC_KEY | sed 's/\//\\\//g')
+			sed -i "s/^$PUBLIC_KEY.*$/$PUBLIC_KEY\ $DESCRIPTION/" $DESTINATION >> /dev/null 2>&1
+		else
+			echo "$PUBLIC_KEY $DESCRIPTION" >>$DESTINATION
+		fi
+	done
+done
+
+exit 0

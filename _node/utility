@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# This script invokes a utility in Individual Computing Infrastructures.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+if [ $# -eq 0 ]; then
+	# Print synopsis.
+	$INFRAC_LIB_DIR/print-synopsis
+	exit 0
+else
+	COMMAND="$INFRAC_UTILITIES_DIR/$1"
+		
+	if [ -f $INVOCATION ]; then
+		# Invoke command if it exists.
+		
+		shift
+		ARGS=$@
+		
+  		$COMMAND $ARGS
+		
+		exit $?
+	else
+		# Warns invalid arguments.
+		echo_error "Invalid arguments: \"'$*'\"."
+		
+		# Print synopsis
+		$INFRAC_LIB_DIR/print-synopsis
+		exit $INVALID_ARGUMENT
+	fi
+fi

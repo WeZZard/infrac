@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# Individual Infrastructure Toolkit's runtime variables.
+#
+
+# COLORS
+ERROR_COLOR='\033[0;31m'
+SUCCESS_COLOR='\033[0;32m'
+WARNING_COLOR='\033[0;33m'
+INFO_COLOR='\033[0;36m'
+END_COLOR='\033[0m'
+
+echo_error() {
+	printf "[${ERROR_COLOR}ERROR${END_COLOR}] $@\n" >&2
+}
+
+echo_warning() {
+	printf "[${WARNING_COLOR}WARNING${END_COLOR}] $@\n" >&2
+}
+
+echo_info() {
+	printf "[${INFO_COLOR}INFO${END_COLOR}] $@\n" >&1
+}
+
+echo_success() {
+	printf "[${SUCCESS_COLOR}SUCCESS${END_COLOR}] $@\n" >&1
+}
+
+# ERROR CODES
+INVALID_ARGUMENT=1
+export INVALID_ARGUMENT
+
+# DIRECTORIES
+INFRAC_DIR="$(dirname $infrac)"
+INFRAC_LIB_DIR="$INFRAC_DIR/lib"
+INFRAC_SERVICES_DIR="$INFRAC_DIR/services"
+INFRAC_RECIPES_DIR="$INFRAC_DIR/recipes"
+INFRAC_UTILITIES_DIR="$INFRAC_DIR/utilities"
+
+export INFRAC_DIR
+export INFRAC_LIB_DIR
+export INFRAC_SERVICES_DIR
+export INFRAC_UTILITIES_DIR
+

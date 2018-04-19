@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+#
+# This script set the hostname.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+printf "Type the hostname [\"localhost\"]: "
+read HOST_NAME
+
+if [ "$HOST_NAME" = "" ]; then
+	HOST_NAME='localhost'
+fi
+
+hostnamectl set-hostname $HOST_NAME
+hostnamectl set-hostname --transient $HOST_NAME
+hostnamectl set-hostname --static $HOST_NAME
+hostnamectl set-hostname --pretty $HOST_NAME
+hostnamectl status
+
+exit 0

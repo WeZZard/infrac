@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# The Individual Infrastructure Toolkit.
+#
+
+# Ensure `infrac` environment variable during the execution of the whole script.
+if [ -z ${infrac+x} ]; then infrac=$0; export infrac; fi
+
+# Source runtime variable setup script.
+. "$(dirname $0)/infrac.rtvar"
+
+# Assert root.
+$INFRAC_LIB_DIR/assert-run-as-root
+if [ $? -ne 0 ]; then exit $INVALID_ARGUMENT; fi
+
+if [ $# -eq 0 ]; then
+	# Print synopsis.
+	$INFRAC_LIB_DIR/print-synopsis
+	exit 0
+else
+	COMMAND="$INFRAC_DIR/_node/$1"
+	if [ -f $COMMAND ]; then
+		# Invoke command if it exists.
+		
+		shift
+		ARGS=$@
+		
+  		$COMMAND $ARGS
+		
+		exit $?
+	else
+		# Warns invalid arguments.
+		echo_error "Invalid arguments: \"'$*'\"."
+		
+		# Print synopsis
+		$INFRAC_LIB_DIR/print-synopsis
+		exit $INVALID_ARGUMENT
+	fi
+fi

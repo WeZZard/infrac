@@ -1,0 +1,14 @@
+Usage: infrac init
+       infrac service SERVICE-NAME [ACTION] [OPTION]...
+       infrac utiliy UTILITY-NAME [ARGUMENT]...
+       infrac help
+
+    init                        Initializes the individual infrastructure infrac
+                                with a step-by-step guide.
+
+    list-service                Lists all the services.
+
+    list-utilities              Lists all the utilities
+
+    help                        Show the help.
+

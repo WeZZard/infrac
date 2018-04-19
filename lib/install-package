@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# This script installs a package from the system packagesite.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+if [ $# -eq 0 ]; then
+	echo_error "No arguments: \"'$*'\"."
+	exit 1
+elif [ $# -eq 1 ]; then
+	apt-get install -y $1
+	exit $?
+else
+	# Warns invalid arguments.
+	echo_error "Too many arguments: \"'$*'\"."
+	exit 1
+fi

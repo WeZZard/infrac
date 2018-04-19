@@ -1,0 +1,103 @@
+#!/bin/sh
+#
+# This script sets a variable in a file
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Parse arguments
+
+FILE=""
+DELIMITER=""
+MULTILINE=0
+VARIABLE_NAME=""
+VARIABLE_VALUE=""
+
+while [ $# -gt 0 ]; do
+	ARG=$1
+	shift
+	
+	case $ARG in
+	-f=*|--file=*)
+		FILE="${ARG#*=}"
+		;;
+	-d=*|--delimiter=*)
+		DELIMITER="${ARG#*=}"
+		;;
+	-n=*|--variable-name=*)
+		VARIABLE_NAME="${ARG#*=}"
+		;;
+	-v=*|--variable-value=*)
+		VARIABLE_VALUE="${ARG#*=}"
+		;;
+	-m|--multiline)
+		MULTILINE=1
+		;;
+	*)
+	    echo_error "Unkown argument: \"$ARG\"."
+		exit $INVALID_ARGUMENT
+	    ;;
+	esac
+done
+
+# Check arguments
+if [ $FILE = "" ]; then
+	echo_error "File not specified. Use -f= or --file= to specify a file."
+	exit $INVALID_ARGUMENT
+fi
+if [ $DELIMITER = "" ]; then
+	echo_error "Delimiter not set. Use -d= or --delimiter= to set a delimiter."
+	exit $INVALID_ARGUMENT
+fi
+if [ $VARIABLE_NAME = "" ]; then
+	echo_error "Variable name not set. Use -n= or --variable-name= to set the variable name."
+	exit $INVALID_ARGUMENT
+fi
+if [ $VARIABLE_VALUE = "" ]; then
+	echo_error "Variable value not set. Use -v= or --variable-value= to set the variable value."
+	exit $INVALID_ARGUMENT
+fi
+
+FINE_DELIMITER=""
+
+case "$DELIMITER" in
+\ *)
+	FINE_DELIMITER=$DELIMITER
+	;;
+*)
+	FINE_DELIMITER=" $DELIMITER "
+	;;
+esac
+
+REPLACEMENT="$VARIABLE_NAME$FINE_DELIMITER$VARIABLE_VALUE"
+
+# Main
+if grep "^$VARIABLE_NAME\s*$DELIMITER\s.*$" $FILE >> /dev/null 2>&1 ; then
+	if [ $MULTILINE -eq 0 ]; then
+		# Single line
+		
+		sed -i.original -E -e "
+		s/^$VARIABLE_NAME\s*$DELIMITER\s*.*$/$REPLACEMENT/
+		" $FILE
+		
+		exit 0
+	else
+		# Multi-line
+		
+		perl -i.original -0777 -pe "
+		s/^$VARIABLE_NAME\s*$DELIMITER\s*\w+(;|,)?\n(\s+\w+(;|,)?\n)*/$REPLACEMENT\n/igsm
+		" $FILE
+		
+		exit 0
+	fi
+else
+    echo "$REPLACEMENT" >>$FILE
+	exit 0
+fi
+
+exit 0

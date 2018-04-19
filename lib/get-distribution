@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# This script gets the distribution name.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+
+# Make sure the script is running on CentOS.
+if [ -f /etc/os-release ]; then
+   	# freedesktop.org and systemd
+   	. /etc/os-release
+	echo $NAME
+elif type lsb_release >/dev/null 2>&1; then
+   	# linuxbase.org
+   	OS=$(lsb_release -si)
+	echo $OS
+elif [ -f /etc/lsb-release ]; then
+   	# For some versions of Debian/Ubuntu without lsb_release command
+   	. /etc/lsb-release
+	echo $DISTRIB_ID
+elif [ -f /etc/debian_version ]; then
+	echo "Older Debian"
+elif [ -f /etc/SuSe-release ]; then
+	echo "SuSe"
+elif [ -f /etc/redhat-release ]; then
+	echo "Older Redhat"
+else
+   	# Fall back to uname, e.g. "Linux <version>", also works for BSD, 
+	# etc.
+   	OS=$(uname -s)
+	echo "$OS"
+fi
+
+exit 0

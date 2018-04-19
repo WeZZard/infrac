@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+#
+# This script check if the host has the specified binary.
+#
+
+# Ensure runtime variables are sourced.
+if [ -z ${infrac+x} ]; then
+	printf "Environment variable `infrac` not set.\n" 1>&2
+	exit 1
+fi
+. "$(dirname $infrac)/infrac.rtvar"
+
+# Main
+if [ $# -eq 0 ]; then
+	echo_error "No arguments: \"'$*'\"."
+	exit 1
+elif [ $# -eq 1 ]; then
+	which $1 >> /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		exit 0
+	else
+		exit 1
+	fi
+else
+	# Warns invalid arguments.
+	echo_error "Too many arguments: \"'$*'\"."
+	exit 1
+fi
