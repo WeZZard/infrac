@@ -29,7 +29,7 @@ fi
 set -e
 
 if [ ! -n "$INFRAC_DIR" ]; then
-  INFRAC_DIR=~/.infrac
+  INFRAC_DIR=$HOME/.infrac
 fi
 
 if [ -d "$INFRAC_DIR" ]; then

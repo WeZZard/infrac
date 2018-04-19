@@ -33,7 +33,7 @@ else
 		echo_error "Invalid arguments: \"'$*'\"."
 		
 		# Print synopsis
-		$INFRAC_LIB_DIR/print-synopsis
+		infrac utility print-synopsis
 		exit $INVALID_ARGUMENT
 	fi
 fi
