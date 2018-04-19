@@ -57,7 +57,7 @@ if [ "$OSTYPE" = cygwin ]; then
 	exit 1
 fi
 
-env git clone --depth=1 https://github.com/wezzard/infrac.git $ZSH || {
+env git clone --depth=1 https://github.com/wezzard/infrac.git $INFRACT_DIR || {
   printf "Error: git clone of infrac repo failed\n"
   exit 1
 }
@@ -76,4 +76,9 @@ echo ''
 echo 'Please look over the ~/.infrac file to checkout utilities services and' echo 'recipies.'
 echo ''
 printf "${NORMAL}"
-env zsh
+
+if [ -f ./.profile ]; then
+	touch ./.profile
+fi
+
+echo ". $HOME/.infrac/infrac.env" >> .profile
