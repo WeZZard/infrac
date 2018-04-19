@@ -28,13 +28,13 @@ fi
 # which may fail on systems lacking tput or terminfo
 set -e
 
-if [ ! -n "$INFRACT_DIR" ]; then
-  INFRACT_DIR=~/.infrac
+if [ ! -n "$INFRAC_DIR" ]; then
+  INFRAC_DIR=~/.infrac
 fi
 
-if [ -d "$INFRACT_DIR" ]; then
+if [ -d "$INFRAC_DIR" ]; then
   printf "${YELLOW}You already have infrac installed.${NORMAL}\n"
-  printf "You'll need to remove $INFRACT_DIR if you want to re-install.\n"
+  printf "You'll need to remove $INFRAC_DIR if you want to re-install.\n"
   exit
 fi
 
@@ -57,7 +57,7 @@ if [ "$OSTYPE" = cygwin ]; then
 	exit 1
 fi
 
-env git clone --depth=1 https://github.com/wezzard/infrac.git $INFRACT_DIR || {
+env git clone --depth=1 https://github.com/wezzard/infrac.git $INFRAC_DIR || {
   printf "Error: git clone of infrac repo failed\n"
   exit 1
 }
