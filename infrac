@@ -15,7 +15,7 @@ if [ $? -ne 0 ]; then exit $INVALID_ARGUMENT; fi
 
 if [ $# -eq 0 ]; then
 	# Print synopsis.
-	$INFRAC_LIB_DIR/print-synopsis
+	infrac utility print-synopsis
 	exit 0
 else
 	COMMAND="$INFRAC_DIR/_node/$1"
