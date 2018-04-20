@@ -43,4 +43,4 @@ infrac
 ```
 
 ## License
-[WTF License](url: http://www.wtfpl.net/about/).
+[WTF License](http://www.wtfpl.net/about/)
